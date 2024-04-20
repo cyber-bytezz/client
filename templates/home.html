@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberAI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+ 
+        .chat-container {
+            width: 100%;
+            max-width: 100%;
+            border-radius: 20px;
+            background-color: #fff;
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+ 
+        .chat-header {
+            background-color: #4f46e5;
+            color: #fff;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+        }
+ 
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+ 
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 15px;
+            word-wrap: break-word;
+        }
+ 
+        .user-message {
+            background-color: #4f46e5;
+            color: #fff;
+            text-align: right;
+        }
+ 
+        .bot-message {
+            background-color: #fff;
+            color: #333;
+            text-align: left;
+            border: 1px solid #e9ecef;
+        }
+ 
+        .input-container {
+            padding: 20px;
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: sticky;
+            bottom: 0;
+            z-index: 1;
+        }
+ 
+        .input-group {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            align-items: center;
+        }
+ 
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border-radius: 30px;
+            border: 1px solid #ccc;
+            outline: none;
+            margin-right: 10px;
+        }
+ 
+        button[type="submit"] {
+            width: 120px;
+            height: 40px;
+            border-radius: 20px;
+            background-color: #4f46e5;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+ 
+        button[type="submit"]:hover {
+            background-color: #3e3aaf;
+        }
+    </style>
+</head>
+ 
+<body>
+ 
+    <nav class="navbar flex items-center justify-between px-4 py-2 bg-gray-200 shadow fixed top-0 left-0 right-0 z-50">
+        <a class="text-xl font-bold text-gray-800" href="#">CyberAI</a>
+        <ul class="flex items-center space-x-6">
+            <li>
+                <a class="text-gray-800 hover:text-blue-600" href="#">Questions</a>
+            </li>
+ 
+            <li>
+                <button id="signoutbutton" class="btn btn-outline-success">Sign Out</button>
+            </li>
+        </ul>
+    </nav>
+ 
+    <div class="chat-container">
+        <div class="chat-header">
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="message bot-message">
+                <p>Hello! I'm CyberAI. How can I assist you today?</p>
+            </div>
+        </div>
+        <div class="input-container">
+            <form id="chat-form" class="input-group">
+                <input type="text" id="text" placeholder="Type a message...">
+                <button type="submit" id="send">Send</button>
+            </form>
+        </div>
+    </div>
+ 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.2/purify.min.js"></script>
+<script>
+    let UserCreds = JSON.parse(sessionStorage.getItem("user-creds"));
+    let userInfo = JSON.parse(sessionStorage.getItem("user-info"));
+
+    let MsgHead = document.getElementById('msg');
+    let GreetHead = document.getElementById('greet');
+    let signoutBtn = document.getElementById('signoutbutton');
+    let timeout; // Variable to store the timeout reference
+
+    let signout = () => {
+        sessionStorage.removeItem("user-creds");
+        sessionStorage.removeItem("user-info");
+        clearTimeout(timeout); // Clear timeout when signing out
+        window.location.href = 'login.html';
+    };
+
+    let resetTimer = () => {
+        clearTimeout(timeout); // Clear timeout on user activity
+        timeout = setTimeout(signout, 30000); // Set timeout for 30 seconds
+    };
+
+    let CheckCred = () => {
+        if (!sessionStorage.getItem("user-creds"))
+            window.location.href = 'login.html';
+        else {
+            MsgHead.innerText = `User with email "${UserCreds.email}" logged in`;
+            GreetHead.innerText = `Welcome ${userInfo.firstname} ${userInfo.lastname}!`;
+            resetTimer(); // Reset the timer on user activity
+        }
+    };
+
+    window.addEventListener('load', CheckCred);
+    signoutBtn.addEventListener('click', signout);
+    document.addEventListener('mousemove', resetTimer); // Add mousemove event listener
+    document.addEventListener('keydown', resetTimer); // Add keydown event listener
+
+    $(document).ready(function () {
+        $("#chat-form").submit(function (event) {
+            event.preventDefault();
+            var rawText = $("#text").val();
+            var sanitizedText = DOMPurify.sanitize(rawText); // Sanitize user input
+            var userHtml = '<div class="message user-message"><p>' + sanitizedText + '</p></div>';
+            $("#chat-messages").append(userHtml);
+            $("#text").val("");
+            $("#chat-messages").scrollTop($("#chat-messages")[0].scrollHeight);
+            $.ajax({
+                data: {
+                    msg: sanitizedText // Send sanitized text to the server
+                },
+                type: "POST",
+                url: "/get"
+            }).done(function (data) {
+                var sanitizedData = DOMPurify.sanitize(data); // Sanitize server response
+                sanitizedData = '<pre style="white-space: pre-wrap; tab-size: 4; text-indent: 5px;">' + sanitizedData + '</pre>';
+                var botHtml = '<div class="message bot-message"><p>' + sanitizedData + '</p></div>';
+                $("#chat-messages").append(botHtml);
+                $("#chat-messages").scrollTop($("#chat-messages")[0].scrollHeight);
+            });
+        });
+    });
+</script>
+</body>
+</html>
